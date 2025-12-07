@@ -1,4 +1,15 @@
 import streamlit as st
+import os
+
+# --- HATA DÜZELTİCİ YAMA ---
+# Bu kod, uygulamanın hafızaya erişip çökmesini engeller
+os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
+# ---------------------------
+
+# Buradan sonra senin kodların devam etsin...
+# import easyocr ...
+import streamlit as st
 import cv2
 import os
 import numpy as np
@@ -133,4 +144,5 @@ if yuklenen_foto:
                 st.error("❌ Eşleşme Bulunamadı.")
                 if en_yuksek_skor > 0:
                     st.warning(f"En yakın tahmin ({bulunan_urun}) idi ama güven skoru çok düşüktü ({en_yuksek_skor}).")
+
                 st.info("İpucu: Fotoğrafı ürünün tam karşısından ve daha aydınlık çekmeyi dene.")
