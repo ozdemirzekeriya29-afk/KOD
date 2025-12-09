@@ -4,118 +4,117 @@ import os
 import numpy as np
 from PIL import Image
 
-# Sayfa Ayarları
-st.set_page_config(page_title="BİM Asistanı", page_icon="🛒", layout="centered")
+# Ayarlar
+st.set_page_config(page_title="BİM Asistanı", layout="centered")
+st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 
-st.title("🛒 BİM Ürün Bulucu")
-st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
+st.title("🛒 Ürün Tarayıcı")
 
-# Klasör kontrolü (Veritabanı)
-KLASOR = "urunler"
-if not os.path.exists(KLASOR):
-    st.error("⚠️ 'urunler' klasörü bulunamadı! GitHub'a resimleri yüklediğinden emin ol.")
-    st.stop()
-
-# --- GELİŞMİŞ GÖRÜNTÜ İŞLEME VE EŞLEŞTİRME ---
-def akilli_karsilastir(aranan_resim, veritabani_resmi):
+# --- GELİŞMİŞ GÖRÜNTÜ İŞLEME MOTORU ---
+def resmi_hazirla(img):
     # 1. Griye Çevir
-    img1 = cv2.cvtColor(aranan_resim, cv2.COLOR_BGR2GRAY)
-    img2 = cv2.cvtColor(veritabani_resmi, cv2.COLOR_BGR2GRAY)
-    
-    # 2. Görüntü İyileştirme (CLAHE) - Karanlık/Parlak ortamlar için
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # 2. Gürültü Temizle (Bulanıklık)
+    # Market raflarındaki parlamayı azaltır
+    denoised = cv2.GaussianBlur(gray, (5, 5), 0)
+    # 3. Kontrastı Artır (CLAHE)
+    # Katalog resmi parlak, telefon resmi sönükse bunu eşitler
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    img1 = clahe.apply(img1)
-    img2 = clahe.apply(img2)
-    
-    # 3. SIFT Algoritması (Detaylı Tarama)
-    sift = cv2.SIFT_create()
-    
-    kp1, des1 = sift.detectAndCompute(img1, None)
-    kp2, des2 = sift.detectAndCompute(img2, None)
-    
-    if des1 is None or des2 is None:
-        return 0
-        
-    # 4. Eşleştirici (FLANN)
-    FLANN_INDEX_KDTREE = 1
-    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-    search_params = dict(checks = 50)
-    
+    final_img = clahe.apply(denoised)
+    return final_img
+
+def akilli_karsilastir(kullanici_resmi, veritabani_resmi):
     try:
+        # Resimleri hazırla
+        img1 = resmi_hazirla(kullanici_resmi)
+        img2 = resmi_hazirla(veritabani_resmi)
+        
+        # SIFT Algoritması (En Detaylısı)
+        sift = cv2.SIFT_create()
+        
+        kp1, des1 = sift.detectAndCompute(img1, None)
+        kp2, des2 = sift.detectAndCompute(img2, None)
+        
+        if des1 is None or des2 is None: return 0
+        
+        # Eşleştirme (FLANN)
+        index_params = dict(algorithm=1, trees=5)
+        search_params = dict(checks=50)
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(des1, des2, k=2)
-    except:
-        return 0
-    
-    # 5. Eleme (Lowe's Ratio Test)
-    iyi_eslesmeler = []
-    for m, n in matches:
-        if m.distance < 0.7 * n.distance:
-            iyi_eslesmeler.append(m)
+        
+        # Eleme (Lowe's Ratio Test - 0.75 yaptık, biraz esnettik)
+        iyi_eslesmeler = []
+        for m, n in matches:
+            if m.distance < 0.75 * n.distance:
+                iyi_eslesmeler.append(m)
+        
+        # Geometrik Doğrulama (RANSAC)
+        # En az 6 nokta geometrik olarak uyuşmalı
+        if len(iyi_eslesmeler) > 6:
+            src_pts = np.float32([kp1[m.queryIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
+            dst_pts = np.float32([kp2[m.trainIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
             
-    # 6. Geometrik Doğrulama (RANSAC) - Rastgeleliği önler
-    if len(iyi_eslesmeler) >= 4:
-        src_pts = np.float32([kp1[m.queryIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kp2[m.trainIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
-        
-        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-        
-        if mask is not None:
-            return sum(mask.ravel().tolist()) # Eşleşen nokta sayısı
-        else:
-            return 0
-    else:
+            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+            if mask is not None:
+                match_count = np.sum(mask)
+                return match_count
+        return 0
+    except:
         return 0
 
 # --- ARAYÜZ ---
-yuklenen_foto = st.file_uploader("📸 Fotoğraf Çek veya Yükle", type=["jpg", "jpeg", "png"])
+if not os.path.exists("urunler"):
+    st.error("Veritabanı bulunamadı!")
+    st.stop()
+
+yuklenen_foto = st.file_uploader("Fotoğraf Çek", type=["jpg", "png", "jpeg"])
 
 if yuklenen_foto:
-    # Kullanıcının yüklediği resmi işle
-    pil_image = Image.open(yuklenen_foto)
-    open_cv_image = np.array(pil_image)
-    aranan_resim = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
+    # Kullanıcı resmini yükle ve çevir
+    user_img_pil = Image.open(yuklenen_foto)
     
-    st.image(pil_image, caption="Aranan Ürün", width=200)
+    # Oryantasyon düzeltme (Telefondan yan gelmemesi için)
+    from PIL import ImageOps
+    user_img_pil = ImageOps.exif_transpose(user_img_pil)
+    
+    user_img = np.array(user_img_pil)
+    user_img = cv2.cvtColor(user_img, cv2.COLOR_RGB2BGR) # OpenCV formatına çevir
 
-    if st.button("🔍 ÜRÜNÜ BUL", type="primary"):
-        en_yuksek_skor = 0
-        bulunan_urun = None
-        bulunan_resim_yolu = None
+    st.image(user_img_pil, caption="Aranan", width=200)
+    
+    if st.button("TARA VE BUL"):
+        en_iyi_skor = 0
+        en_iyi_urun = None
         
-        dosyalar = os.listdir(KLASOR)
+        dosyalar = os.listdir("urunler")
         bar = st.progress(0)
-        durum_yazisi = st.empty()
         
-        # Tüm veritabanını tara
         for i, dosya in enumerate(dosyalar):
-            if dosya.endswith((".jpg", ".png", ".jpeg")):
-                durum_yazisi.text(f"Taranıyor... {dosya}")
+            path = os.path.join("urunler", dosya)
+            db_img = cv2.imread(path)
+            
+            if db_img is not None:
+                puan = akilli_karsilastir(user_img, db_img)
                 
-                db_path = os.path.join(KLASOR, dosya)
-                db_img = cv2.imread(db_path)
-                
-                if db_img is None: continue
-                
-                skor = akilli_karsilastir(aranan_resim, db_img)
-                
-                if skor > en_yuksek_skor:
-                    en_yuksek_skor = skor
-                    bulunan_urun = dosya.split(".")[0]
-                    bulunan_resim_yolu = db_path
+                # En yüksek puanı tut
+                if puan > en_iyi_skor:
+                    en_iyi_skor = puan
+                    en_iyi_urun = dosya.split(".")[0]
             
             bar.progress((i + 1) / len(dosyalar))
             
-        durum_yazisi.empty()
         bar.empty()
         
-        # --- SONUÇ ---
-        ESIK_DEGERI = 10 # En az 10 nokta uyuşmalı (Hata payını azaltmak için)
-        
+        # SONUÇ EKRANI
         st.divider()
-        if bulunan_urun and en_yuksek_skor >= ESIK_DEGERI:
-            st.success(f"✅ BULUNDU! KOD: {bulunan_urun}")
-            st.image(bulunan_resim_yolu, caption=f"Katalog Resmi (Güven Skoru: {en_yuksek_skor})")
+        # Eşik Değeri: En az 10 sağlam nokta bulmalı
+        if en_iyi_urun and en_iyi_skor >= 10:
+            st.success(f"✅ BULUNDU!\nKod: {en_iyi_urun}")
+            st.write(f"Eşleşme Puanı: {en_iyi_skor}")
+            st.image(f"urunler/{en_iyi_urun}.jpg", width=150)
         else:
-            st.error("❌ Eşleşme Bulunamadı.")
-            st.info("İpucu: Ürünü daha yakından ve dik bir açıyla çekmeyi dene.")
+            st.error("❌ Ürün bulunamadı.")
+            st.info("İpucu: Sadece ürünün kendisine odaklanın, parlamayı engelleyin.")
+            if en_iyi_urun:
+                st.write(f"En yakın tahmin: {en_iyi_urun} (Puan: {en_iyi_skor} - Çok düşük)")
