@@ -10,25 +10,41 @@ st.set_page_config(page_title="kod", page_icon="🛒", layout="centered")
 
 # 2. GİZLİLİK VE TEMİZLİK KODU (GÜÇLENDİRİLMİŞ CSS)
 # Bu kod üstteki renkli şeridi, menüyü ve alttaki yazıları SİLER.
+# --- TERMİNATÖR GİZLEME KODU (CSS) ---
+# Bu kod, ne olursa olsun üstteki beyaz çubuğu ve senin adını YOK EDER.
 gizleme_kodu = """
             <style>
-            /* Üst Menü ve Header Gizleme */
-            #MainMenu {visibility: hidden;}
-            header {visibility: hidden;}
+            /* 1. En üstteki beyaz çubuğu (Header) komple yok et */
+            header {
+                visibility: hidden !important;
+                height: 0px !important;
+            }
             
-            /* Alt Bilgi (Footer) Gizleme */
-            footer {visibility: hidden;}
+            /* 2. O çubuğun içindeki butonları ve yazıları sil */
+            .stAppHeader {
+                display: none !important;
+            }
             
-            /* 'Manage App' ve 'Deploy' Butonlarını Gizle */
-            .stAppDeployButton {display: none;}
+            /* 3. Sağ üstteki 'Manage App' butonunu sil */
+            .stAppDeployButton {
+                display: none !important;
+            }
             
-            /* Resimlerin üzerindeki Fullscreen butonunu gizle */
-            button[title="View fullscreen"] {display: none;}
+            /* 4. Menü (3 çizgi) butonunu sil */
+            #MainMenu {
+                visibility: hidden !important;
+                display: none !important;
+            }
             
-            /* Sayfa kenar boşluklarını azalt (Telefonda daha iyi durur) */
+            /* 5. Alt bilgiyi (Footer) sil */
+            footer {
+                visibility: hidden !important;
+                display: none !important;
+            }
+            
+            /* 6. Sayfanın en tepesindeki boşluğu kapat (Yukarı kaydır) */
             .block-container {
-                padding-top: 1rem;
-                padding-bottom: 0rem;
+                padding-top: 0rem !important;
             }
             </style>
             """
@@ -127,3 +143,4 @@ if yuklenen_foto:
             st.error("❌ Eşleşme Bulunamadı.")
             if en_yuksek_skor > 0:
                 st.warning(f"En yakın: {bulunan_urun} (Puan: {en_yuksek_skor})")
+
