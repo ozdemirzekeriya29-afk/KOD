@@ -17,7 +17,7 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-st.title("🛒 BİM Ürün Bulucu V2")
+st.title("🛒Ürün Bulucu")
 st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
 
 # Klasör kontrolü
@@ -141,3 +141,4 @@ if yuklenen_foto:
             if en_yuksek_skor > 0:
                 st.warning(f"En yakın tahmin: {bulunan_urun} (Puan: {en_yuksek_skor}) - Yetersiz.")
             st.info("💡 İpucu: Paketi düzleştirip, parlamayan bir yerinden çek.")
+
