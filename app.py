@@ -5,103 +5,95 @@ import numpy as np
 from PIL import Image
 import streamlit.components.v1 as components
 
-# 1. SAYFA AYARLARI (Genişlik ve Başlık)
+# 1. SAYFA AYARLARI
 st.set_page_config(page_title="BİM Asistanı", page_icon="🛒", layout="centered")
 
-# 2. %100 GARANTİLİ GİZLEME KODU (CSS) 💣
-# Bu kod footer'ı, header'ı ve "Created by" yazılarını zorla yok eder.
+# 2. GİZLEME KODU (CSS + JAVASCRIPT KOMBİNASYONU) 💣
+# Hem stil ile gizliyoruz hem de JavaScript ile siliyoruz.
+
 gizleme_kodu = """
     <style>
-        /* 1. Tüm Alt Bilgiyi (Footer) Yok Et */
-        footer {
-            visibility: hidden !important;
-            display: none !important;
-            height: 0px !important;
-        }
-        
-        /* 2. Streamlit'in özel 'stFooter' bileşenini hedef al ve sil */
-        [data-testid="stFooter"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* 3. En tepedeki beyaz header şeridini sil */
-        header {
-            visibility: hidden !important;
-            display: none !important;
-        }
-        [data-testid="stHeader"] {
-            display: none !important;
-        }
-
-        /* 4. Sağ üstteki seçenekleri ve 'Deploy' butonunu sil */
+        /* CSS İLE GİZLEME */
+        footer {visibility: hidden !important; display: none !important;}
+        header {visibility: hidden !important; display: none !important;}
+        #MainMenu {visibility: hidden !important; display: none !important;}
+        [data-testid="stFooter"] {display: none !important;}
         .stAppDeployButton {display: none !important;}
-        [data-testid="stToolbar"] {display: none !important;}
-        #MainMenu {display: none !important;}
-
-        /* 5. Sayfanın üstündeki boşluğu kapat (Yukarı yapıştır) */
+        
+        /* İçeriği yukarı çek */
         .block-container {
             padding-top: 0rem !important;
-            padding-bottom: 0rem !important;
-            margin-top: -40px !important;
-        }
-        
-        /* 6. Viewer Badge (Sağ alttaki küçük gri yazılar) */
-        .viewerBadge_container__1QSob {
-            display: none !important;
+            margin-top: -3rem !important;
         }
     </style>
+    
+    <script>
+        // JAVASCRIPT İLE SİLME (GARANTİ YÖNTEM)
+        // Bu kod her yarım saniyede bir o yazıyı kontrol eder ve varsa siler.
+        setInterval(function() {
+            var footer = document.querySelector("footer");
+            if(footer) { footer.remove(); }
+            
+            var header = document.querySelector("header");
+            if(header) { header.remove(); }
+            
+            var mainMenu = document.querySelector("#MainMenu");
+            if(mainMenu) { mainMenu.remove(); }
+        }, 100);
+    </script>
 """
-st.markdown(gizleme_kodu, unsafe_allow_html=True)
+# Javascript'i sayfaya gömüyoruz (Height 0 yaparak görünmez yapıyoruz)
+components.html(gizleme_kodu, height=0, width=0)
 
-# 3. UYGULAMA BAŞLIĞI
+
+# 3. UYGULAMA İÇERİĞİ
 st.title("🛒 Ürün Bulucu")
 st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
 
 # --- KLASÖR KONTROLÜ ---
 KLASOR = "urunler"
 if not os.path.exists(KLASOR):
-    st.error("⚠️ Veritabanı klasörü bulunamadı!")
-    st.stop()
-
-# --- GÖRÜNTÜ İŞLEME MOTORU (SIFT + CLAHE) ---
-def akilli_karsilastir(aranan_resim, veritabani_resmi):
-    img1 = cv2.cvtColor(aranan_resim, cv2.COLOR_BGR2GRAY)
-    img2 = cv2.cvtColor(veritabani_resmi, cv2.COLOR_BGR2GRAY)
-    
-    # Görüntü İyileştirme
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    img1 = clahe.apply(img1)
-    img2 = clahe.apply(img2)
-    
-    kernel = np.array([[0, -1, 0], [-1, 5,-1], [0, -1, 0]])
-    img1 = cv2.filter2D(img1, -1, kernel)
-    
-    sift = cv2.SIFT_create()
-    kp1, des1 = sift.detectAndCompute(img1, None)
-    kp2, des2 = sift.detectAndCompute(img2, None)
-    
-    if des1 is None or des2 is None: return 0
-        
-    index_params = dict(algorithm = 1, trees = 5)
-    search_params = dict(checks = 50)
-    
+    # Eğer klasör yoksa hata verme, sessizce oluştur (Hata mesajı görünmemesi için)
     try:
+        os.makedirs(KLASOR)
+    except:
+        st.error("Veritabanı hatası!")
+
+# --- GÖRÜNTÜ İŞLEME MOTORU ---
+def akilli_karsilastir(aranan_resim, veritabani_resmi):
+    try:
+        img1 = cv2.cvtColor(aranan_resim, cv2.COLOR_BGR2GRAY)
+        img2 = cv2.cvtColor(veritabani_resmi, cv2.COLOR_BGR2GRAY)
+        
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        img1 = clahe.apply(img1)
+        img2 = clahe.apply(img2)
+        
+        sift = cv2.SIFT_create()
+        kp1, des1 = sift.detectAndCompute(img1, None)
+        kp2, des2 = sift.detectAndCompute(img2, None)
+        
+        if des1 is None or des2 is None: return 0
+            
+        index_params = dict(algorithm = 1, trees = 5)
+        search_params = dict(checks = 50)
+        
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(des1, des2, k=2)
-    except: return 0
-    
-    iyi_eslesmeler = []
-    for m, n in matches:
-        if m.distance < 0.75 * n.distance:
-            iyi_eslesmeler.append(m)
-            
-    if len(iyi_eslesmeler) >= 4:
-        src_pts = np.float32([kp1[m.queryIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kp2[m.trainIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
-        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-        if mask is not None:
-            return sum(mask.ravel().tolist())
+        
+        iyi_eslesmeler = []
+        for m, n in matches:
+            if m.distance < 0.75 * n.distance:
+                iyi_eslesmeler.append(m)
+                
+        if len(iyi_eslesmeler) >= 4:
+            src_pts = np.float32([kp1[m.queryIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
+            dst_pts = np.float32([kp2[m.trainIdx].pt for m in iyi_eslesmeler]).reshape(-1, 1, 2)
+            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+            if mask is not None:
+                return sum(mask.ravel().tolist())
+    except:
+        return 0
     return 0
 
 # --- ARAYÜZ ---
