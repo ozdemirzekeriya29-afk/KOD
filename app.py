@@ -24,13 +24,6 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 # CSS ile gereksiz menüleri gizle (APK için iyileştirme)
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 st.title("🛒Ürün Bulucu")
@@ -157,4 +150,5 @@ if yuklenen_foto:
             if en_yuksek_skor > 0:
                 st.warning(f"En yakın tahmin: {bulunan_urun} (Puan: {en_yuksek_skor}) - Yetersiz.")
             st.info("💡 İpucu: Paketi düzleştirip, parlamayan bir yerinden çek.")
+
 
