@@ -6,7 +6,23 @@ from PIL import Image
 
 # Sayfa Ayarları (Hata mesajlarını gizle)
 st.set_page_config(page_title="BİM Asistanı", page_icon="🛒", layout="centered")
-
+# --- GİZLEME KODU (CSS) ---
+hide_streamlit_style = """
+            <style>
+            /* Üstteki Menü Butonunu (3 Çizgi) Gizle */
+            #MainMenu {visibility: hidden;}
+            
+            /* Alttaki 'Built with Streamlit' Yazısını ve Fullscreen Butonunu Gizle */
+            footer {visibility: hidden;}
+            
+            /* Üstteki Renkli Şeridi Gizle */
+            header {visibility: hidden;}
+            
+            /* Eğer varsa 'Deploy' butonunu da gizle */
+            .stAppDeployButton {display: none;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 # CSS ile gereksiz menüleri gizle (APK için iyileştirme)
 hide_st_style = """
             <style>
@@ -141,3 +157,4 @@ if yuklenen_foto:
             if en_yuksek_skor > 0:
                 st.warning(f"En yakın tahmin: {bulunan_urun} (Puan: {en_yuksek_skor}) - Yetersiz.")
             st.info("💡 İpucu: Paketi düzleştirip, parlamayan bir yerinden çek.")
+
