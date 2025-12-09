@@ -5,52 +5,56 @@ import numpy as np
 from PIL import Image
 import streamlit.components.v1 as components
 
-# 1. SAYFA AYARLARI
+# 1. SAYFA AYARLARI (Genişlik ve Başlık)
 st.set_page_config(page_title="BİM Asistanı", page_icon="🛒", layout="centered")
 
-# 2. ATOM BOMBASI GİZLEME KODU (EN GÜÇLÜSÜ) 💣
-# Bu kod, tepedeki Header'ı ID'sine göre bulup yok eder.
+# 2. %100 GARANTİLİ GİZLEME KODU (CSS) 💣
+# Bu kod footer'ı, header'ı ve "Created by" yazılarını zorla yok eder.
 gizleme_kodu = """
     <style>
-        /* 1. Ana Header'ı (Beyaz Şerit) Komple Yok Et */
-        header[data-testid="stHeader"] {
-            display: none !important;
+        /* 1. Tüm Alt Bilgiyi (Footer) Yok Et */
+        footer {
             visibility: hidden !important;
+            display: none !important;
             height: 0px !important;
         }
-
-        /* 2. Toolbar'ı (Sağ üstteki seçenekler) Yok Et */
-        div[data-testid="stToolbar"] {
+        
+        /* 2. Streamlit'in özel 'stFooter' bileşenini hedef al ve sil */
+        [data-testid="stFooter"] {
             display: none !important;
             visibility: hidden !important;
         }
 
-        /* 3. Tepedeki Renkli Çizgiyi (Decoration) Yok Et */
-        div[data-testid="stDecoration"] {
-            display: none !important;
+        /* 3. En tepedeki beyaz header şeridini sil */
+        header {
             visibility: hidden !important;
+            display: none !important;
+        }
+        [data-testid="stHeader"] {
+            display: none !important;
         }
 
-        /* 4. Alt Bilgiyi (Footer) Yok Et */
-        footer {
-            display: none !important;
-            visibility: hidden !important;
-        }
+        /* 4. Sağ üstteki seçenekleri ve 'Deploy' butonunu sil */
+        .stAppDeployButton {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
+        #MainMenu {display: none !important;}
 
-        /* 5. İçeriği En Tepeye Çek (Boşluk Kalmasın) */
+        /* 5. Sayfanın üstündeki boşluğu kapat (Yukarı yapıştır) */
         .block-container {
             padding-top: 0rem !important;
-            margin-top: -3rem !important;
+            padding-bottom: 0rem !important;
+            margin-top: -40px !important;
         }
         
-        /* 6. Butonları Gizle */
-        .stAppDeployButton {display: none !important;}
-        button[title="View fullscreen"] {display: none !important;}
+        /* 6. Viewer Badge (Sağ alttaki küçük gri yazılar) */
+        .viewerBadge_container__1QSob {
+            display: none !important;
+        }
     </style>
 """
 st.markdown(gizleme_kodu, unsafe_allow_html=True)
 
-# 3. BAŞLIK
+# 3. UYGULAMA BAŞLIĞI
 st.title("🛒 Ürün Bulucu")
 st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
 
@@ -60,11 +64,12 @@ if not os.path.exists(KLASOR):
     st.error("⚠️ Veritabanı klasörü bulunamadı!")
     st.stop()
 
-# --- GÖRÜNTÜ İŞLEME MOTORU ---
+# --- GÖRÜNTÜ İŞLEME MOTORU (SIFT + CLAHE) ---
 def akilli_karsilastir(aranan_resim, veritabani_resmi):
     img1 = cv2.cvtColor(aranan_resim, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(veritabani_resmi, cv2.COLOR_BGR2GRAY)
     
+    # Görüntü İyileştirme
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     img1 = clahe.apply(img1)
     img2 = clahe.apply(img2)
