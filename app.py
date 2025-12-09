@@ -20,7 +20,7 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-st.title("🛒 Ürün Bulucu V2")
+st.title("🛒 Ürün Bulucu")
 st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
 
 # Klasör kontrolü
@@ -136,29 +136,3 @@ if yuklenen_foto:
             if en_yuksek_skor > 0:
                 st.warning(f"En yakın tahmin: {bulunan_urun} (Puan: {en_yuksek_skor})")
             st.info("💡 İpucu: Ürünü daha yakından çekmeyi dene.")
-
-# --- BEDAVA SABİT REKLAM ALANI ---
-reklam_kodu = """
-<style>
-.fixed-bottom-ad {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: #f1f1f1;
-    color: black;
-    text-align: center;
-    border-top: 1px solid #ccc;
-    z-index: 9999;
-    padding: 10px 0;
-    box-shadow: 0px -2px 5px rgba(0,0,0,0.1);
-}
-</style>
-<div class="fixed-bottom-ad">
-    <div style="font-family: sans-serif; font-size: 12px; color: #666;">
-        <strong>📢 Sponsorlu Alan</strong><br>
-        (Reklamlar Burada Görünecek)
-    </div>
-</div>
-"""
-components.html(reklam_kodu, height=80)
