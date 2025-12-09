@@ -6,51 +6,51 @@ from PIL import Image
 import streamlit.components.v1 as components
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="kod", page_icon="🛒", layout="centered")
+st.set_page_config(page_title="BİM Asistanı", page_icon="🛒", layout="centered")
 
-# 2. GİZLİLİK VE TEMİZLİK KODU (GÜÇLENDİRİLMİŞ CSS)
-# Bu kod üstteki renkli şeridi, menüyü ve alttaki yazıları SİLER.
-# --- TERMİNATÖR GİZLEME KODU (CSS) ---
-# Bu kod, ne olursa olsun üstteki beyaz çubuğu ve senin adını YOK EDER.
+# 2. ATOM BOMBASI GİZLEME KODU (EN GÜÇLÜSÜ) 💣
+# Bu kod, tepedeki Header'ı ID'sine göre bulup yok eder.
 gizleme_kodu = """
-            <style>
-            /* 1. En üstteki beyaz çubuğu (Header) komple yok et */
-            header {
-                visibility: hidden !important;
-                height: 0px !important;
-            }
-            
-            /* 2. O çubuğun içindeki butonları ve yazıları sil */
-            .stAppHeader {
-                display: none !important;
-            }
-            
-            /* 3. Sağ üstteki 'Manage App' butonunu sil */
-            .stAppDeployButton {
-                display: none !important;
-            }
-            
-            /* 4. Menü (3 çizgi) butonunu sil */
-            #MainMenu {
-                visibility: hidden !important;
-                display: none !important;
-            }
-            
-            /* 5. Alt bilgiyi (Footer) sil */
-            footer {
-                visibility: hidden !important;
-                display: none !important;
-            }
-            
-            /* 6. Sayfanın en tepesindeki boşluğu kapat (Yukarı kaydır) */
-            .block-container {
-                padding-top: 0rem !important;
-            }
-            </style>
-            """
+    <style>
+        /* 1. Ana Header'ı (Beyaz Şerit) Komple Yok Et */
+        header[data-testid="stHeader"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0px !important;
+        }
+
+        /* 2. Toolbar'ı (Sağ üstteki seçenekler) Yok Et */
+        div[data-testid="stToolbar"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* 3. Tepedeki Renkli Çizgiyi (Decoration) Yok Et */
+        div[data-testid="stDecoration"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* 4. Alt Bilgiyi (Footer) Yok Et */
+        footer {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* 5. İçeriği En Tepeye Çek (Boşluk Kalmasın) */
+        .block-container {
+            padding-top: 0rem !important;
+            margin-top: -3rem !important;
+        }
+        
+        /* 6. Butonları Gizle */
+        .stAppDeployButton {display: none !important;}
+        button[title="View fullscreen"] {display: none !important;}
+    </style>
+"""
 st.markdown(gizleme_kodu, unsafe_allow_html=True)
 
-# 3. BAŞLIK VE LOGO
+# 3. BAŞLIK
 st.title("🛒 Ürün Bulucu")
 st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
 
@@ -65,7 +65,6 @@ def akilli_karsilastir(aranan_resim, veritabani_resmi):
     img1 = cv2.cvtColor(aranan_resim, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(veritabani_resmi, cv2.COLOR_BGR2GRAY)
     
-    # Görüntü İyileştirme
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     img1 = clahe.apply(img1)
     img2 = clahe.apply(img2)
@@ -143,4 +142,3 @@ if yuklenen_foto:
             st.error("❌ Eşleşme Bulunamadı.")
             if en_yuksek_skor > 0:
                 st.warning(f"En yakın: {bulunan_urun} (Puan: {en_yuksek_skor})")
-
