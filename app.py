@@ -3,30 +3,24 @@ import cv2
 import os
 import numpy as np
 from PIL import Image
+import streamlit.components.v1 as components
 
-# Sayfa Ayarları (Hata mesajlarını gizle)
+# Sayfa Ayarları (Temiz Görünüm)
 st.set_page_config(page_title="BİM Asistanı", page_icon="🛒", layout="centered")
-# --- GİZLEME KODU (CSS) ---
-hide_streamlit_style = """
+
+# --- GİZLEME KODU (DÜZELTİLMİŞ) ---
+# Bu kod "Built with Streamlit" yazısını ve üst menüyü gizler
+hide_st_style = """
             <style>
-            /* Üstteki Menü Butonunu (3 Çizgi) Gizle */
             #MainMenu {visibility: hidden;}
-            
-            /* Alttaki 'Built with Streamlit' Yazısını ve Fullscreen Butonunu Gizle */
             footer {visibility: hidden;}
-            
-            /* Üstteki Renkli Şeridi Gizle */
             header {visibility: hidden;}
-            
-            /* Eğer varsa 'Deploy' butonunu da gizle */
             .stAppDeployButton {display: none;}
             </style>
             """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-# CSS ile gereksiz menüleri gizle (APK için iyileştirme)
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-st.title("🛒Ürün Bulucu")
+st.title("🛒 Ürün Bulucu V2")
 st.write("Ürünün fotoğrafını çek, yapay zeka kodunu bulsun!")
 
 # Klasör kontrolü
@@ -41,19 +35,11 @@ def akilli_karsilastir(aranan_resim, veritabani_resmi):
     img1 = cv2.cvtColor(aranan_resim, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(veritabani_resmi, cv2.COLOR_BGR2GRAY)
     
-    # 2. GÖRÜNTÜ İYİLEŞTİRME (YENİ ÖZELLİK) 🌟
+    # 2. GÖRÜNTÜ İYİLEŞTİRME (YENİ)
     # Kontrastı artır (CLAHE)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     img1 = clahe.apply(img1)
     img2 = clahe.apply(img2)
-    
-    # Keskinleştirme (Sharpening) - Detayları patlatır
-    kernel = np.array([[0, -1, 0],
-                       [-1, 5,-1],
-                       [0, -1, 0]])
-    img1 = cv2.filter2D(img1, -1, kernel)
-    # Veritabanı resmi zaten netse 2.ye yapmaya gerek yok ama garanti olsun
-    # img2 = cv2.filter2D(img2, -1, kernel)
     
     # 3. SIFT Algoritması
     sift = cv2.SIFT_create()
@@ -75,10 +61,10 @@ def akilli_karsilastir(aranan_resim, veritabani_resmi):
     except:
         return 0
     
-    # 5. Eleme (Esnetilmiş)
+    # 5. Eleme
     iyi_eslesmeler = []
     for m, n in matches:
-        if m.distance < 0.75 * n.distance: # 0.7'den 0.75'e çektik (Daha toleranslı)
+        if m.distance < 0.75 * n.distance: 
             iyi_eslesmeler.append(m)
             
     # 6. Geometrik Doğrulama (RANSAC)
@@ -101,7 +87,7 @@ yuklenen_foto = st.file_uploader("📸 Ürün Fotoğrafı", type=["jpg", "jpeg",
 if yuklenen_foto:
     pil_image = Image.open(yuklenen_foto)
     open_cv_image = np.array(pil_image)
-    # Renk formatı düzeltme
+    
     if len(open_cv_image.shape) == 3:
         aranan_resim = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
     else:
@@ -119,7 +105,6 @@ if yuklenen_foto:
         durum = st.empty()
         
         for i, dosya in enumerate(dosyalar):
-            # durum.text(f"Taranıyor... {dosya}") # Hızı artırmak için yazıyı kaldırdık
             if dosya.endswith((".jpg", ".png", ".jpeg")):
                 db_path = os.path.join(KLASOR, dosya)
                 db_img = cv2.imread(db_path)
@@ -138,6 +123,7 @@ if yuklenen_foto:
         bar.empty()
         
         # --- YENİ EŞİK DEĞERİ: 6 ---
+        # (Makarnayı bulması için 10'dan 6'ya indirdik)
         ESIK_DEGERI = 6 
         
         st.divider()
@@ -148,7 +134,31 @@ if yuklenen_foto:
         else:
             st.error("❌ Eşleşme Bulunamadı.")
             if en_yuksek_skor > 0:
-                st.warning(f"En yakın tahmin: {bulunan_urun} (Puan: {en_yuksek_skor}) - Yetersiz.")
-            st.info("💡 İpucu: Paketi düzleştirip, parlamayan bir yerinden çek.")
+                st.warning(f"En yakın tahmin: {bulunan_urun} (Puan: {en_yuksek_skor})")
+            st.info("💡 İpucu: Ürünü daha yakından çekmeyi dene.")
 
-
+# --- BEDAVA SABİT REKLAM ALANI ---
+reklam_kodu = """
+<style>
+.fixed-bottom-ad {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #f1f1f1;
+    color: black;
+    text-align: center;
+    border-top: 1px solid #ccc;
+    z-index: 9999;
+    padding: 10px 0;
+    box-shadow: 0px -2px 5px rgba(0,0,0,0.1);
+}
+</style>
+<div class="fixed-bottom-ad">
+    <div style="font-family: sans-serif; font-size: 12px; color: #666;">
+        <strong>📢 Sponsorlu Alan</strong><br>
+        (Reklamlar Burada Görünecek)
+    </div>
+</div>
+"""
+components.html(reklam_kodu, height=80)
